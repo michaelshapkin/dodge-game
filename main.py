@@ -2,8 +2,18 @@ import pygame
 import random
 import asyncio
 
-# Initialize Pygame
+# Initialize Pygame and mixer
 pygame.init()
+pygame.mixer.init()
+
+# Load sound effects
+try:
+    point_sound = pygame.mixer.Sound("point.wav")
+    gameover_sound = pygame.mixer.Sound("gameover.wav")
+except pygame.error as e:
+    print(f"Warning: Could not load sounds - {e}")
+    point_sound = None
+    gameover_sound = None
 
 # Set up the display
 WIDTH = 800
@@ -68,12 +78,16 @@ async def main():
             if block['y'] > HEIGHT:
                 blocks.remove(block)
                 score += 1
+                if point_sound:  # Play sound if loaded
+                    point_sound.play()
 
         # Collision detection
         player_rect = pygame.Rect(player_x, player_y, PLAYER_WIDTH, PLAYER_HEIGHT)
         for block in blocks:
             block_rect = pygame.Rect(block['x'], block['y'], BLOCK_WIDTH, BLOCK_HEIGHT)
             if player_rect.colliderect(block_rect):
+                if gameover_sound:  # Play sound if loaded
+                    gameover_sound.play()
                 running = False
 
         # Drawing
