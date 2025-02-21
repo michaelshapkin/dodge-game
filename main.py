@@ -20,10 +20,10 @@ except pygame.error as e:
 try:
     font_path = "PressStart2P-Regular.ttf"
     font_small = pygame.font.Font(font_path, 24)
-    font_large = pygame.font.Font(font_path, 36)  # Reduced from 48 to 36
+    font_large = pygame.font.Font(font_path, 36)
 except:
     font_small = pygame.font.Font(None, 36)
-    font_large = pygame.font.Font(None, 54)  # Adjusted fallback too
+    font_large = pygame.font.Font(None, 54)
 
 # Set up the display
 WIDTH = 800
@@ -56,22 +56,17 @@ block_frequency = 25
 score = 0
 blocks = []
 clock = pygame.time.Clock()
+leaderboard = []  # Global leaderboard to persist within session
 
 # Leaderboard functions
 def load_leaderboard():
-    try:
-        return json.loads(pygame.display.get_driver() or '[]')
-    except:
-        return []
+    global leaderboard
+    return leaderboard  # Use global list instead of relying on get_driver
 
-def save_leaderboard(score):
-    leaderboard = load_leaderboard()
-    leaderboard.append(score)
-    leaderboard = sorted(leaderboard, reverse=True)[:10]  # Top 10 scores
-    try:
-        pygame.display.set_driver(json.dumps(leaderboard))
-    except:
-        pass
+def save_leaderboard(new_score):
+    global leaderboard
+    leaderboard.append(new_score)
+    leaderboard = sorted(leaderboard, reverse=True)[:10]  # Keep top 10
     return leaderboard
 
 def draw_gradient_background():
@@ -105,7 +100,7 @@ def spawn_block():
 
 # Main game loop as an async function
 async def main():
-    global player_x, score, blocks
+    global player_x, score, blocks, leaderboard
     while True:  # Outer loop for restart
         running = True
         frame_count = 0
