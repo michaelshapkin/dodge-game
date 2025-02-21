@@ -1,6 +1,7 @@
 import pygame
 import random
 import asyncio
+import json
 
 # Initialize Pygame and mixer
 pygame.init()
@@ -25,6 +26,7 @@ pygame.display.set_caption("Dodge the Blocks")
 WHITE = (255, 255, 255)
 RED = (255, 0, 0)
 BLUE = (0, 0, 255)
+BLACK = (0, 0, 0)
 
 # Player properties
 PLAYER_WIDTH = 40
@@ -43,6 +45,35 @@ block_frequency = 25
 score = 0
 blocks = []
 clock = pygame.time.Clock()
+
+# Leaderboard functions
+def load_leaderboard():
+    try:
+        # For Pygbag/WebAssembly, we'll simulate localStorage with a default
+        # In a real browser, this would interact with JavaScript localStorage
+        return json.loads(pygame.display.get_driver() or '[]')
+    except:
+        return []  # Default empty leaderboard
+
+def save_leaderboard(score):
+    leaderboard = load_leaderboard()
+    leaderboard.append(score)
+    leaderboard = sorted(leaderboard, reverse=True)[:5]  # Top 5 scores
+    try:
+        # Simulate saving to localStorage
+        pygame.display.set_driver(json.dumps(leaderboard))
+    except:
+        pass  # Silent fail for web compatibility
+    return leaderboard
+
+def draw_leaderboard(leaderboard):
+    font = pygame.font.Font(None, 50)
+    title = font.render("Leaderboard", True, BLACK)
+    screen.blit(title, (WIDTH//2 - title.get_width()//2, 100))
+    
+    for i, score in enumerate(leaderboard[:5]):
+        text = font.render(f"{i+1}. {score}", True, BLACK)
+        screen.blit(text, (WIDTH//2 - text.get_width()//2, 200 + i * 50))
 
 def spawn_block():
     x = random.randint(0, WIDTH - BLOCK_WIDTH)
@@ -78,7 +109,7 @@ async def main():
             if block['y'] > HEIGHT:
                 blocks.remove(block)
                 score += 1
-                if point_sound:  # Play sound if loaded
+                if point_sound:
                     point_sound.play()
 
         # Collision detection
@@ -86,7 +117,7 @@ async def main():
         for block in blocks:
             block_rect = pygame.Rect(block['x'], block['y'], BLOCK_WIDTH, BLOCK_HEIGHT)
             if player_rect.colliderect(block_rect):
-                if gameover_sound:  # Play sound if loaded
+                if gameover_sound:
                     gameover_sound.play()
                 running = False
 
@@ -98,7 +129,7 @@ async def main():
 
         # Draw score
         font = pygame.font.Font(None, 36)
-        score_text = font.render(f"Score: {score}", True, (0, 0, 0))
+        score_text = font.render(f"Score: {score}", True, BLACK)
         screen.blit(score_text, (10, 10))
 
         # Update display
@@ -110,10 +141,17 @@ async def main():
 
     # Game over screen
     font = pygame.font.Font(None, 74)
-    game_over_text = font.render(f"Game Over! Score: {score}", True, (0, 0, 0))
-    screen.blit(game_over_text, (WIDTH//2 - 200, HEIGHT//2 - 20))
+    game_over_text = font.render(f"Game Over! Score: {score}", True, BLACK)
+    screen.blit(game_over_text, (WIDTH//2 - game_over_text.get_width()//2, HEIGHT//2 - 20))
     pygame.display.flip()
-    await asyncio.sleep(2)  # Show game over for 2 seconds
+    await asyncio.sleep(2)
+
+    # Save score and show leaderboard
+    leaderboard = save_leaderboard(score)
+    screen.fill(WHITE)
+    draw_leaderboard(leaderboard)
+    pygame.display.flip()
+    await asyncio.sleep(5)  # Show leaderboard for 5 seconds
 
 # Run the async main function
 asyncio.run(main())
